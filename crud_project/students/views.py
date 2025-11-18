@@ -2,6 +2,10 @@ from django.shortcuts import render, redirect, get_object_or_404
 from .models import Student
 from .forms import StudentForm
 from django.contrib import messages
+import requests
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+import json
 
 def student_list(request):
     students = Student.objects.all()
@@ -38,3 +42,30 @@ def delete_student(request, id):
     messages.success(request, "Record deleted successfully!")
     return redirect('student_list')
 
+# --------------------
+# RASA CHATBOT VIEWS
+# --------------------
+
+def chatbot_page(request):
+    return render(request, "chatbot/chat.html")
+
+@csrf_exempt
+def rasa_webhook(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "Invalid request"}, status=400)
+
+    data = json.loads(request.body)
+    user_msg = data.get("message", "")
+
+    # Send message to Rasa server
+    rasa_response = requests.post(
+        "http://localhost:5005/webhooks/rest/webhook",
+        json={"sender": "django-user", "message": user_msg}
+    )
+
+    bot_reply = rasa_response.json()
+
+    # extract text
+    reply_text = bot_reply[0]["text"] if bot_reply else "Sorry, I didn't understand."
+
+    return JsonResponse({"reply": reply_text})

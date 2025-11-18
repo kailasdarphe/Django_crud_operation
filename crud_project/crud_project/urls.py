@@ -17,10 +17,13 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from django.shortcuts import redirect
+from students.views import chatbot_page, rasa_webhook
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('students/', include('students.urls')),
-    path('', lambda request: redirect('student_list')),  # root → students list
+    path("chatbot/", chatbot_page, name="chatbot_page"),
+    path("rasa-webhook/", rasa_webhook),
+    path('', lambda request: redirect('student_list')),
 ]
 

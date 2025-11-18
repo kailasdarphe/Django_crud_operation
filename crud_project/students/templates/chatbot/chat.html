@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chatbot</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f2f2f2;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Floating Chat Box */
+        .chat-container {
+            width: 350px;
+            height: 500px;
+            background: #ffffff;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .chat-header {
+            background: #075E54;
+            padding: 15px;
+            color: white;
+            font-size: 18px;
+            text-align: center;
+        }
+
+        /* Messages Area */
+        .chat-body {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            background: #ECE5DD;
+        }
+
+        /* Message Bubbles */
+        .msg {
+            margin: 8px 0;
+            max-width: 80%;
+            padding: 10px;
+            border-radius: 10px;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .msg-user {
+            background: #DCF8C6;
+            margin-left: auto;
+        }
+
+        .msg-bot {
+            background: white;
+            margin-right: auto;
+        }
+
+        /* Bottom Input Area */
+        .chat-input {
+            display: flex;
+            border-top: 1px solid #ccc;
+        }
+
+        .chat-input input {
+            width: 100%;
+            border: none;
+            padding: 12px;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .chat-input button {
+            background: #075E54;
+            color: white;
+            padding: 12px 18px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .chat-input button:hover {
+            background: #0b7b65;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="chat-container">
+    <div class="chat-header">NG Chatbot Integration</div>
+
+    <div class="chat-body" id="chatBody"></div>
+
+    <form class="chat-input" id="chatForm">
+        <input type="text" id="message" placeholder="Type a message..." required>
+        <button type="submit">Send</button>
+    </form>
+</div>
+
+<script>
+    const chatBody = document.getElementById("chatBody");
+    const chatForm = document.getElementById("chatForm");
+    const messageInput = document.getElementById("message");
+
+    function addMessage(text, sender) {
+        const msgDiv = document.createElement("div");
+        msgDiv.classList.add("msg", sender === "user" ? "msg-user" : "msg-bot");
+        msgDiv.innerText = text;
+        chatBody.appendChild(msgDiv);
+        chatBody.scrollTop = chatBody.scrollHeight;
+    }
+
+    chatForm.addEventListener("submit", function(e) {
+        e.preventDefault();
+        const userMessage = messageInput.value;
+
+        addMessage(userMessage, "user");
+        messageInput.value = "";
+
+        // Send to your Django → Rasa API
+        fetch("/rasa-webhook/", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message: userMessage })
+        })
+        .then(res => res.json())
+        .then(data => {
+            addMessage(data.reply, "bot");
+        })
+        .catch(() => {
+            addMessage("Error connecting to chatbot.", "bot");
+        });
+    });
+</script>
+
+</body>
+</html>
