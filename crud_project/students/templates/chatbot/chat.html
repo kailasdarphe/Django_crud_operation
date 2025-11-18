@@ -98,33 +98,32 @@
 
     <div class="chat-body" id="chatBody"></div>
 
-    <form class="chat-input" id="chatForm">
-        <input type="text" id="message" placeholder="Type a message..." required>
-        <button type="submit">Send</button>
-    </form>
+   <div class="chat-input">
+    <input type="text" id="chatInput" placeholder="Type message..." />
+    <button id="sendBtn">Send</button>
+    </div>
 </div>
 
 <script>
+    const chatInput = document.getElementById("chatInput");
+    const sendBtn = document.getElementById("sendBtn");
     const chatBody = document.getElementById("chatBody");
-    const chatForm = document.getElementById("chatForm");
-    const messageInput = document.getElementById("message");
 
     function addMessage(text, sender) {
         const msgDiv = document.createElement("div");
-        msgDiv.classList.add("msg", sender === "user" ? "msg-user" : "msg-bot");
+        msgDiv.className = sender === "user" ? "msg msg-user" : "msg msg-bot";
         msgDiv.innerText = text;
         chatBody.appendChild(msgDiv);
         chatBody.scrollTop = chatBody.scrollHeight;
     }
 
-    chatForm.addEventListener("submit", function(e) {
-        e.preventDefault();
-        const userMessage = messageInput.value;
+    function sendMessage() {
+        const userMessage = chatInput.value.trim();
+        if (!userMessage) return;
 
         addMessage(userMessage, "user");
-        messageInput.value = "";
+        chatInput.value = "";
 
-        // Send to your Django → Rasa API
         fetch("/rasa-webhook/", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -133,12 +132,22 @@
         .then(res => res.json())
         .then(data => {
             addMessage(data.reply, "bot");
-        })
-        .catch(() => {
-            addMessage("Error connecting to chatbot.", "bot");
         });
+    }
+
+    // ENTER key to send
+    chatInput.addEventListener("keydown", (event) => {
+        console.log("Key pressed:", event.key);  // debugging
+        if (event.key === "Enter") {
+            event.preventDefault();
+            sendMessage();
+        }
     });
+
+    sendBtn.addEventListener("click", sendMessage);
 </script>
+
+
 
 </body>
 </html>

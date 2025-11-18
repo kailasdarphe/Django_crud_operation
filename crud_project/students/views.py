@@ -6,6 +6,7 @@ import requests
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
+from .models import ChatMessage
 
 def student_list(request):
     students = Student.objects.all()
@@ -51,21 +52,22 @@ def chatbot_page(request):
 
 @csrf_exempt
 def rasa_webhook(request):
-    if request.method != "POST":
-        return JsonResponse({"error": "Invalid request"}, status=400)
+    if request.method == "POST":
+        data = json.loads(request.body)
+        user_msg = data.get("message")
 
-    data = json.loads(request.body)
-    user_msg = data.get("message", "")
+        # Save USER message
+        ChatMessage.objects.create(sender="user", message=user_msg)
 
-    # Send message to Rasa server
-    rasa_response = requests.post(
-        "http://localhost:5005/webhooks/rest/webhook",
-        json={"sender": "django-user", "message": user_msg}
-    )
+        # Send to rasa
+        rasa_response = requests.post(
+            "http://localhost:5005/webhooks/rest/webhook",
+            json={"sender": "user", "message": user_msg}
+        )
 
-    bot_reply = rasa_response.json()
+        bot_reply = rasa_response.json()[0]["text"]
 
-    # extract text
-    reply_text = bot_reply[0]["text"] if bot_reply else "Sorry, I didn't understand."
+        # Save BOT message
+        ChatMessage.objects.create(sender="bot", message=bot_reply)
 
-    return JsonResponse({"reply": reply_text})
+        return JsonResponse({"reply": bot_reply})
